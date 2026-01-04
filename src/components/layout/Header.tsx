@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useStudent } from "@/hooks/useStudent";
 import { useAuth } from "@/hooks/useAuth";
-import { Calendar, LogOut, Settings, User, Shield } from "lucide-react";
+import { Calendar, LogOut, Settings, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +13,18 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Header() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { student, clearStudent } = useStudent();
+  const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
+  const handleClearSession = () => {
+    clearStudent();
+    navigate("/entry");
+  };
+
+  const handleAdminSignOut = async () => {
     await signOut();
-    navigate("/auth");
+    navigate("/");
   };
 
   const getInitials = (name: string) => {
@@ -43,63 +50,74 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center gap-4">
-          {user ? (
+          {/* Show admin button if logged in as admin */}
+          {user && isAdmin && (
             <>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/admin")}
-                  className="gap-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin</span>
-                </Button>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {profile?.name ? getInitials(profile.name) : "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                        {profile?.name ? getInitials(profile.name) : "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col space-y-0.5">
-                      <p className="text-sm font-medium">{profile?.name || "User"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {profile?.roll_number} • Batch {profile?.batch}
-                      </p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/admin")}
+                className="gap-2"
+              >
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAdminSignOut}
+                className="gap-2 text-destructive"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </>
-          ) : (
-            <Button onClick={() => navigate("/auth")} className="gradient-primary">
-              Sign In
+          )}
+
+          {/* Show student dropdown if student is logged in */}
+          {student?.rollNumber && !user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10 border-2 border-primary/20">
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {getInitials(student.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center gap-2 p-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      {getInitials(student.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col space-y-0.5">
+                    <p className="text-sm font-medium">{student.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {student.rollNumber}
+                    </p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleClearSession} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Clear Session
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Show entry button if no student and not admin */}
+          {!student?.rollNumber && !user && (
+            <Button onClick={() => navigate("/entry")} className="gradient-primary">
+              Get Started
             </Button>
           )}
         </nav>

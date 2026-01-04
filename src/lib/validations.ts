@@ -9,27 +9,20 @@ export const isValidRollNumber = (rollNumber: string): boolean => {
   return (num >= 231701001 && num <= 231701063) || num === 231701501;
 };
 
-export const signUpSchema = z.object({
+export const studentNameSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name must be less than 100 characters"),
-  email: z
-    .string()
-    .trim()
-    .email("Invalid email address")
-    .max(255, "Email must be less than 255 characters"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password must be less than 100 characters"),
+});
+
+export const rollNumberSchema = z.object({
   rollNumber: z
     .string()
     .trim()
     .regex(/^\d{9}$/, "Roll number must be exactly 9 digits")
     .refine(isValidRollNumber, "Invalid roll number. Must be 231701001-231701063 or 231701501"),
-  batch: z.enum(["B1", "B2"], { required_error: "Please select a batch" }),
 });
 
 export const signInSchema = z.object({
@@ -69,7 +62,8 @@ export const timetableEntrySchema = z.object({
   staff_name: z.string().trim().optional(),
 });
 
-export type SignUpFormData = z.infer<typeof signUpSchema>;
+export type StudentNameFormData = z.infer<typeof studentNameSchema>;
+export type RollNumberFormData = z.infer<typeof rollNumberSchema>;
 export type SignInFormData = z.infer<typeof signInSchema>;
 export type AnnouncementFormData = z.infer<typeof announcementSchema>;
 export type TimetableEntryFormData = z.infer<typeof timetableEntrySchema>;

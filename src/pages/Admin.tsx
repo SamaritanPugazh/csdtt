@@ -15,7 +15,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isLoading && (!user || !isAdmin)) {
-      navigate("/");
+      navigate("/admin-login");
     }
   }, [user, isAdmin, isLoading, navigate]);
 

@@ -71,6 +71,33 @@ export type Database = {
         }
         Relationships: []
       }
+      subject_batch_preferences: {
+        Row: {
+          batch: Database["public"]["Enums"]["batch_type"]
+          course_code: string
+          created_at: string
+          id: string
+          roll_number: string
+          updated_at: string
+        }
+        Insert: {
+          batch?: Database["public"]["Enums"]["batch_type"]
+          course_code: string
+          created_at?: string
+          id?: string
+          roll_number: string
+          updated_at?: string
+        }
+        Update: {
+          batch?: Database["public"]["Enums"]["batch_type"]
+          course_code?: string
+          created_at?: string
+          id?: string
+          roll_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       timetable: {
         Row: {
           batch: Database["public"]["Enums"]["batch_type"]

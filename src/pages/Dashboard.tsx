@@ -40,7 +40,7 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (!studentLoading && (!student?.name || !student?.rollNumber)) {
+    if (!studentLoading && !student?.rollNumber) {
       navigate("/entry");
     }
   }, [student, studentLoading, navigate]);
@@ -111,7 +111,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-space font-bold text-foreground mb-2">
-            Welcome, <span className="text-gradient">{student.name.split(" ")[0]}</span>!
+            Your Timetable
           </h1>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
             <Badge variant="outline" className="font-mono">

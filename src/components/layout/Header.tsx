@@ -27,13 +27,8 @@ export function Header() {
     navigate("/");
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+  const getInitials = (rollNumber: string) => {
+    return rollNumber.slice(-2);
   };
 
   return (
@@ -80,8 +75,8 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {getInitials(student.name)}
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold font-mono">
+                      {getInitials(student.rollNumber)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -89,15 +84,12 @@ export function Header() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {getInitials(student.name)}
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-mono">
+                      {getInitials(student.rollNumber)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-0.5">
-                    <p className="text-sm font-medium">{student.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {student.rollNumber}
-                    </p>
+                    <p className="text-sm font-medium font-mono">{student.rollNumber}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />

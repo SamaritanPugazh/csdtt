@@ -9,9 +9,9 @@ import { ArrowLeft, LogOut, FlaskConical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const COURSE_NAMES: Record<string, string> = {
-  "AI23331": "Artificial Intelligence",
-  "CD23631": "Cloud Computing Lab",
-  "CD23632": "Mobile App Development Lab",
+  "AI23331": "Fundamentals of Machine Learning",
+  "CD23631": "Game Design & Development",
+  "CD23632": "3D Rigging & Animation",
 };
 
 export default function Settings() {
@@ -57,9 +57,8 @@ export default function Settings() {
           <CardContent className="space-y-6">
             {/* Current User Info */}
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Logged in as</p>
-              <p className="font-medium text-foreground">{student.name}</p>
-              <p className="text-sm text-muted-foreground font-mono">{student.rollNumber}</p>
+              <p className="text-sm text-muted-foreground">Roll Number</p>
+              <p className="font-medium text-foreground font-mono">{student.rollNumber}</p>
             </div>
 
             {/* Per-Subject Batch Selection */}
@@ -108,7 +107,7 @@ export default function Settings() {
             <div className="border-t pt-6">
               <h3 className="font-medium text-foreground mb-2">Session</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Clear your session to enter a different name or roll number.
+                Clear your session to use a different roll number.
               </p>
               <Button
                 variant="destructive"

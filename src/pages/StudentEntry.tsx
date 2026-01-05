@@ -1,41 +1,47 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { NameEntryForm } from "@/components/student/NameEntryForm";
 import { RollNumberForm } from "@/components/student/RollNumberForm";
+import { BatchSelectionForm } from "@/components/student/BatchSelectionForm";
 import { useStudent } from "@/hooks/useStudent";
 import { Calendar } from "lucide-react";
 
-type Step = "name" | "rollNumber";
+type Step = "rollNumber" | "batchSelection";
 
 export default function StudentEntry() {
-  const [step, setStep] = useState<Step>("name");
-  const [tempName, setTempName] = useState("");
-  const { student, isLoading, setStudentName, setRollNumber } = useStudent();
+  const [step, setStep] = useState<Step>("rollNumber");
+  const { student, isLoading, isNewStudent, setRollNumber, saveBatchPreferences } = useStudent();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If student already has complete data, redirect to dashboard
-    if (!isLoading && student?.name && student?.rollNumber) {
+    // If student already has data and is not new, redirect to dashboard
+    if (!isLoading && student?.rollNumber && isNewStudent === false) {
       navigate("/");
     }
-  }, [student, isLoading, navigate]);
+  }, [student, isLoading, isNewStudent, navigate]);
 
-  const handleNameSubmit = (name: string) => {
-    setTempName(name);
-    setStudentName(name);
-    setStep("rollNumber");
-  };
-
-  const handleRollNumberSubmit = (rollNumber: string) => {
-    const success = setRollNumber(rollNumber);
+  const handleRollNumberSubmit = async (rollNumber: string) => {
+    const success = await setRollNumber(rollNumber);
     if (success) {
-      navigate("/");
+      // isNewStudent will be set after setRollNumber completes
+      // We need to wait for the next render to check
     }
   };
 
-  const handleBack = () => {
-    setStep("name");
+  // Watch for isNewStudent to determine next step
+  useEffect(() => {
+    if (student?.rollNumber && isNewStudent !== null) {
+      if (isNewStudent) {
+        setStep("batchSelection");
+      } else {
+        navigate("/");
+      }
+    }
+  }, [student?.rollNumber, isNewStudent, navigate]);
+
+  const handleBatchSubmit = async (batches: Record<string, "B1" | "B2">) => {
+    await saveBatchPreferences(batches);
+    navigate("/");
   };
 
   if (isLoading) {
@@ -60,19 +66,18 @@ export default function StudentEntry() {
           </div>
           <CardTitle className="text-2xl font-space">CSD Timetable</CardTitle>
           <CardDescription>
-            {step === "name" 
-              ? "Enter your name to get started" 
-              : "Enter your roll number to view your timetable"}
+            {step === "rollNumber" 
+              ? "Enter your roll number to access your timetable" 
+              : "Select your batch for each lab subject"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {step === "name" ? (
-            <NameEntryForm onSubmit={handleNameSubmit} />
+          {step === "rollNumber" ? (
+            <RollNumberForm onSubmit={handleRollNumberSubmit} />
           ) : (
-            <RollNumberForm
-              studentName={tempName}
-              onSubmit={handleRollNumberSubmit}
-              onBack={handleBack}
+            <BatchSelectionForm
+              rollNumber={student?.rollNumber || ""}
+              onSubmit={handleBatchSubmit}
             />
           )}
         </CardContent>

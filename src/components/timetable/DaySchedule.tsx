@@ -1,5 +1,5 @@
 import { TimetableCard } from "./TimetableCard";
-import { Calendar } from "lucide-react";
+import { Calendar, PartyPopper } from "lucide-react";
 
 interface TimetableEntry {
   id: string;
@@ -16,15 +16,43 @@ interface TimetableEntry {
 interface DayScheduleProps {
   day: string;
   entries: TimetableEntry[];
+  isHoliday?: boolean;
 }
 
-export function DaySchedule({ day, entries }: DayScheduleProps) {
-  // Sort entries by time slot
+// Parse time string like "9:00" or "10:30" to minutes for proper sorting
+function parseTimeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(":").map((s) => parseInt(s.trim(), 10));
+  return hours * 60 + (minutes || 0);
+}
+
+export function DaySchedule({ day, entries, isHoliday = false }: DayScheduleProps) {
+  // Sort entries by time slot (earliest to latest)
   const sortedEntries = [...entries].sort((a, b) => {
     const timeA = a.time_slot.split("-")[0].trim();
     const timeB = b.time_slot.split("-")[0].trim();
-    return timeA.localeCompare(timeB);
+    return parseTimeToMinutes(timeA) - parseTimeToMinutes(timeB);
   });
+
+  if (isHoliday) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+            <PartyPopper className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <h2 className="font-space font-bold text-xl text-foreground">{day}</h2>
+            <p className="text-sm text-muted-foreground">Holiday</p>
+          </div>
+        </div>
+        <div className="text-center py-12 bg-muted/20 rounded-xl border-2 border-dashed border-muted-foreground/20">
+          <PartyPopper className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-lg font-medium text-muted-foreground">No Classes</p>
+          <p className="text-sm text-muted-foreground/70">Enjoy your holiday!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

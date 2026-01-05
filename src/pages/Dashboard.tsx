@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, FlaskConical } from "lucide-react";
 
-const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const HOLIDAYS = ["Sunday", "Monday"] as const;
 
 interface TimetableEntry {
   id: string;
@@ -141,8 +142,9 @@ export default function Dashboard() {
             <div className="w-4 h-4 rounded bg-lab" />
             <span className="text-sm text-muted-foreground">Lab</span>
           </div>
-          <div className="text-sm text-muted-foreground ml-auto">
-            <span className="font-medium text-foreground">Sun & Mon:</span> Holidays
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-muted border-2 border-dashed border-muted-foreground/30" />
+            <span className="text-sm text-muted-foreground">Holiday</span>
           </div>
         </div>
 
@@ -170,7 +172,11 @@ export default function Dashboard() {
           ) : (
             DAYS.map((day) => (
               <TabsContent key={day} value={day} className="mt-0">
-                <DaySchedule day={day} entries={getEntriesForDay(day)} />
+                <DaySchedule 
+                  day={day} 
+                  entries={getEntriesForDay(day)} 
+                  isHoliday={HOLIDAYS.includes(day as typeof HOLIDAYS[number])}
+                />
               </TabsContent>
             ))
           )}

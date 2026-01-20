@@ -29,8 +29,10 @@
 
     /* Custom colors for the app */
     --theory: 262 83% 58%;
+    --theory-foreground: 0 0% 100%;
     --theory-light: 262 83% 95%;
     --lab: 160 84% 39%;
+    --lab-foreground: 0 0% 100%;
     --lab-light: 160 84% 92%;
     --success: 160 84% 39%;
     --warning: 38 92% 50%;
@@ -74,8 +76,10 @@
     --ring: 262 83% 65%;
 
     --theory: 262 83% 65%;
+    --theory-foreground: 0 0% 100%;
     --theory-light: 262 40% 20%;
     --lab: 160 84% 45%;
+    --lab-foreground: 0 0% 100%;
     --lab-light: 160 40% 18%;
 
     --sidebar-background: 240 5.9% 10%;

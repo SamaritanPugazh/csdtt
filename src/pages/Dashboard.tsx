@@ -3,15 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { useStudent, BATCH_CONFIGURABLE_COURSES } from "@/hooks/useStudent";
 import { supabase } from "@/integrations/supabase/client";
-import { DaySchedule } from "@/components/timetable/DaySchedule";
+import { CalendarView } from "@/components/timetable/CalendarView";
 import { AnnouncementBanner } from "@/components/announcements/AnnouncementBanner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, FlaskConical } from "lucide-react";
-
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-const HOLIDAYS = ["Sunday", "Monday"] as const;
 
 interface TimetableEntry {
   id: string;
@@ -26,19 +22,10 @@ interface TimetableEntry {
 }
 
 export default function Dashboard() {
-  const { student, isLoading: studentLoading, getSubjectBatch, subjectBatches } = useStudent();
+  const { student, isLoading: studentLoading, getSubjectBatch } = useStudent();
   const navigate = useNavigate();
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeDay, setActiveDay] = useState<string>(getCurrentDay());
-
-  function getCurrentDay(): string {
-    const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
-    if (DAYS.includes(today as (typeof DAYS)[number])) {
-      return today;
-    }
-    return "Tuesday";
-  }
 
   useEffect(() => {
     if (!studentLoading && !student?.rollNumber) {
@@ -91,7 +78,7 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-8">
           <div className="space-y-4">
             <Skeleton className="h-12 w-64" />
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-[500px] w-full" />
           </div>
         </div>
       </Layout>
@@ -99,10 +86,6 @@ export default function Dashboard() {
   }
 
   const filteredTimetable = getFilteredTimetable();
-  const getEntriesForDay = (day: string) => {
-    return filteredTimetable.filter((entry) => entry.day === day);
-  };
-
   const theoryCount = filteredTimetable.filter((e) => e.class_type === "Theory").length;
   const labCount = filteredTimetable.filter((e) => e.class_type === "Lab").length;
 
@@ -148,39 +131,15 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Timetable Tabs */}
-        <Tabs value={activeDay} onValueChange={setActiveDay}>
-          <TabsList className="w-full flex overflow-x-auto mb-6 h-auto p-1">
-            {DAYS.map((day) => (
-              <TabsTrigger
-                key={day}
-                value={day}
-                className="flex-1 min-w-[80px] data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground"
-              >
-                <span className="hidden sm:inline">{day}</span>
-                <span className="sm:hidden">{day.slice(0, 3)}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          ) : (
-            DAYS.map((day) => (
-              <TabsContent key={day} value={day} className="mt-0">
-                <DaySchedule 
-                  day={day} 
-                  entries={getEntriesForDay(day)} 
-                  isHoliday={HOLIDAYS.includes(day as typeof HOLIDAYS[number])}
-                />
-              </TabsContent>
-            ))
-          )}
-        </Tabs>
+        {/* Calendar Timetable View */}
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-[500px] w-full" />
+          </div>
+        ) : (
+          <CalendarView entries={filteredTimetable} />
+        )}
       </div>
     </Layout>
   );

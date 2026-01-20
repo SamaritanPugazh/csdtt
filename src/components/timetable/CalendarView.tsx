@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarClassBlock } from "./CalendarClassBlock";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -51,11 +51,14 @@ function getWeekRangeString(): string {
 
 export function CalendarView({ entries }: CalendarViewProps) {
   const isMobile = useIsMobile();
-  const [selectedDayIndex, setSelectedDayIndex] = useState(new Date().getDay());
+  const todayIndex = new Date().getDay();
+  const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   
   const currentDay = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  const isViewingToday = selectedDayIndex === todayIndex;
   
   // Handle swipe gestures on mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -68,8 +71,10 @@ export function CalendarView({ entries }: CalendarViewProps) {
     
     if (Math.abs(diff) > 50) {
       if (diff > 0 && selectedDayIndex < 6) {
+        setAnimationDirection('left');
         setSelectedDayIndex(prev => prev + 1);
       } else if (diff < 0 && selectedDayIndex > 0) {
+        setAnimationDirection('right');
         setSelectedDayIndex(prev => prev - 1);
       }
     }
@@ -77,9 +82,18 @@ export function CalendarView({ entries }: CalendarViewProps) {
   
   const navigateDay = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && selectedDayIndex > 0) {
+      setAnimationDirection('right');
       setSelectedDayIndex(prev => prev - 1);
     } else if (direction === 'next' && selectedDayIndex < 6) {
+      setAnimationDirection('left');
       setSelectedDayIndex(prev => prev + 1);
+    }
+  };
+
+  const goToToday = () => {
+    if (selectedDayIndex !== todayIndex) {
+      setAnimationDirection(selectedDayIndex > todayIndex ? 'right' : 'left');
+      setSelectedDayIndex(todayIndex);
     }
   };
 
@@ -116,28 +130,42 @@ export function CalendarView({ entries }: CalendarViewProps) {
     const dayEntries = getEntriesForDay(selectedDay);
 
     return (
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded-xl border overflow-hidden animate-fade-in">
         {/* Sticky Header */}
         <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b p-4">
-          <p className="text-xs text-muted-foreground text-center mb-2">{getWeekRangeString()}</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">{getWeekRangeString()}</p>
+            {!isViewingToday && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={goToToday}
+                className="h-7 text-xs gap-1.5 animate-scale-in"
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                Today
+              </Button>
+            )}
+          </div>
           <div className="flex items-center justify-between">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigateDay('prev')}
               disabled={selectedDayIndex === 0}
+              className="transition-transform active:scale-90"
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <div className="text-center">
               <h3 className={cn(
-                "font-semibold text-lg",
+                "font-semibold text-lg transition-colors",
                 selectedDay === currentDay && "text-primary"
               )}>
                 {selectedDay}
               </h3>
               {selectedDay === currentDay && (
-                <span className="text-xs text-primary">Today</span>
+                <span className="text-xs text-primary animate-fade-in">Today</span>
               )}
             </div>
             <Button 
@@ -145,6 +173,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
               size="icon" 
               onClick={() => navigateDay('next')}
               disabled={selectedDayIndex === 6}
+              className="transition-transform active:scale-90"
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
@@ -155,15 +184,19 @@ export function CalendarView({ entries }: CalendarViewProps) {
             {SHORT_DAYS.map((day, index) => (
               <button
                 key={day}
-                onClick={() => setSelectedDayIndex(index)}
+                onClick={() => {
+                  setAnimationDirection(index > selectedDayIndex ? 'left' : 'right');
+                  setSelectedDayIndex(index);
+                }}
                 className={cn(
-                  "w-8 h-8 rounded-full text-xs font-medium transition-colors",
+                  "w-8 h-8 rounded-full text-xs font-medium transition-all duration-200",
+                  "hover:scale-110 active:scale-95",
                   index === selectedDayIndex 
-                    ? "bg-primary text-primary-foreground" 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" 
                     : HOLIDAYS.includes(DAYS[index] as typeof HOLIDAYS[number])
                       ? "bg-muted text-muted-foreground"
                       : DAYS[index] === currentDay
-                        ? "bg-primary/20 text-primary"
+                        ? "bg-primary/20 text-primary ring-2 ring-primary/30"
                         : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -175,13 +208,19 @@ export function CalendarView({ entries }: CalendarViewProps) {
 
         {/* Calendar Grid - Mobile */}
         <div 
-          className="relative"
+          key={selectedDayIndex}
+          className={cn(
+            "relative",
+            animationDirection === 'left' && "animate-slide-in-left",
+            animationDirection === 'right' && "animate-slide-in-right"
+          )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onAnimationEnd={() => setAnimationDirection(null)}
         >
           {isHoliday ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <span className="text-4xl mb-3">🎉</span>
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground animate-fade-in">
+              <span className="text-4xl mb-3 animate-bounce-gentle">🎉</span>
               <span className="text-lg font-medium">Holiday</span>
               <span className="text-sm">No classes scheduled</span>
             </div>
@@ -189,7 +228,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
             <div className="flex">
               {/* Time Labels */}
               <div className="w-14 flex-shrink-0 border-r bg-muted/20">
-                {timeSlots.map((time, index) => (
+                {timeSlots.map((time) => (
                   <div 
                     key={time} 
                     className="text-xs text-muted-foreground pr-2 text-right"
@@ -213,13 +252,17 @@ export function CalendarView({ entries }: CalendarViewProps) {
                 
                 {/* Class Blocks */}
                 <div className="absolute inset-0 p-1">
-                  {dayEntries.map((entry) => {
+                  {dayEntries.map((entry, index) => {
                     const { top, height } = getBlockStyle(entry.time_slot);
                     return (
                       <div
                         key={entry.id}
-                        className="absolute left-1 right-1"
-                        style={{ top, height }}
+                        className="absolute left-1 right-1 animate-scale-in"
+                        style={{ 
+                          top, 
+                          height,
+                          animationDelay: `${index * 50}ms`
+                        }}
                       >
                         <CalendarClassBlock entry={entry} compact={height < 60} />
                       </div>
@@ -236,18 +279,27 @@ export function CalendarView({ entries }: CalendarViewProps) {
 
   // Desktop full week view
   return (
-    <div className="bg-card rounded-xl border overflow-hidden">
+    <div className="bg-card rounded-xl border overflow-hidden animate-fade-in">
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b">
-        <div className="text-center py-2 border-b bg-muted/30">
+        <div className="flex items-center justify-between py-2 px-4 border-b bg-muted/30">
           <span className="text-sm font-medium text-muted-foreground">{getWeekRangeString()}</span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={goToToday}
+            className="h-7 text-xs gap-1.5 transition-all hover:scale-105 active:scale-95"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            Today
+          </Button>
         </div>
         <div className="flex">
           {/* Empty corner for time labels */}
           <div className="w-16 flex-shrink-0 border-r" />
           
           {/* Day Headers */}
-          {DAYS.map((day) => {
+          {DAYS.map((day, index) => {
             const isHoliday = HOLIDAYS.includes(day as typeof HOLIDAYS[number]);
             const isToday = day === currentDay;
             
@@ -255,20 +307,21 @@ export function CalendarView({ entries }: CalendarViewProps) {
               <div
                 key={day}
                 className={cn(
-                  "flex-1 text-center py-3 border-r last:border-r-0 transition-colors",
+                  "flex-1 text-center py-3 border-r last:border-r-0 transition-all duration-300",
                   isHoliday && "bg-muted/50",
                   isToday && "bg-primary/10"
                 )}
+                style={{ animationDelay: `${index * 30}ms` }}
               >
                 <span className={cn(
-                  "text-sm font-medium",
+                  "text-sm font-medium transition-colors",
                   isHoliday && "text-muted-foreground",
-                  isToday && "text-primary"
+                  isToday && "text-primary font-semibold"
                 )}>
                   {day.slice(0, 3)}
                 </span>
                 {isToday && (
-                  <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
+                  <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1 animate-pulse" />
                 )}
               </div>
             );
@@ -280,11 +333,14 @@ export function CalendarView({ entries }: CalendarViewProps) {
       <div className="flex overflow-x-auto" ref={scrollRef}>
         {/* Time Labels */}
         <div className="w-16 flex-shrink-0 border-r bg-muted/20">
-          {timeSlots.map((time) => (
+          {timeSlots.map((time, index) => (
             <div 
               key={time} 
-              className="text-xs text-muted-foreground px-2 text-right flex items-start pt-1"
-              style={{ height: HOUR_HEIGHT }}
+              className="text-xs text-muted-foreground px-2 text-right flex items-start pt-1 animate-fade-in"
+              style={{ 
+                height: HOUR_HEIGHT,
+                animationDelay: `${index * 20}ms`
+              }}
             >
               {time.replace(':00', '')}
             </div>
@@ -292,7 +348,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
         </div>
         
         {/* Day Columns */}
-        {DAYS.map((day) => {
+        {DAYS.map((day, dayIndex) => {
           const isHoliday = HOLIDAYS.includes(day as typeof HOLIDAYS[number]);
           const isToday = day === currentDay;
           const dayEntries = getEntriesForDay(day);
@@ -301,9 +357,9 @@ export function CalendarView({ entries }: CalendarViewProps) {
             <div
               key={day}
               className={cn(
-                "flex-1 min-w-[120px] relative border-r last:border-r-0",
+                "flex-1 min-w-[120px] relative border-r last:border-r-0 transition-colors duration-300",
                 isHoliday && "bg-muted/30",
-                isToday && "bg-primary/5"
+                isToday && "bg-primary/5 ring-1 ring-inset ring-primary/20"
               )}
             >
               {/* Grid Lines */}
@@ -318,7 +374,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
               {/* Holiday Overlay */}
               {isHoliday && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-muted/80 px-3 py-1.5 rounded-full">
+                  <div className="bg-muted/80 px-3 py-1.5 rounded-full animate-fade-in">
                     <span className="text-xs font-medium text-muted-foreground">Holiday</span>
                   </div>
                 </div>
@@ -327,13 +383,17 @@ export function CalendarView({ entries }: CalendarViewProps) {
               {/* Class Blocks */}
               {!isHoliday && (
                 <div className="absolute inset-0 p-0.5">
-                  {dayEntries.map((entry) => {
+                  {dayEntries.map((entry, entryIndex) => {
                     const { top, height } = getBlockStyle(entry.time_slot);
                     return (
                       <div
                         key={entry.id}
-                        className="absolute left-0.5 right-0.5"
-                        style={{ top, height }}
+                        className="absolute left-0.5 right-0.5 animate-scale-in"
+                        style={{ 
+                          top, 
+                          height,
+                          animationDelay: `${(dayIndex * 50) + (entryIndex * 30)}ms`
+                        }}
                       >
                         <CalendarClassBlock entry={entry} compact={height < 50} />
                       </div>

@@ -1,18 +1,19 @@
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarClassBlock } from "./CalendarClassBlock";
+import { DaySchedule } from "./DaySchedule";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-const HOLIDAYS = ["Sunday", "Monday"] as const;
+// Only working days (no Sunday/Monday holidays)
+const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const SHORT_DAYS = ["Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 // Time slots from 8 AM to 5 PM (in hours)
 const START_HOUR = 8;
 const END_HOUR = 17;
-const HOUR_HEIGHT = 60; // pixels per hour
+const HOUR_HEIGHT = 70; // pixels per hour - increased for better readability
 
 interface TimetableEntry {
   id: string;
@@ -49,16 +50,24 @@ function getWeekRangeString(): string {
   return `${formatDate(startOfWeek)} – ${formatDate(endOfWeek)}`;
 }
 
+// Map day name to index in our DAYS array
+function getDayIndex(dayName: string): number {
+  return DAYS.indexOf(dayName as typeof DAYS[number]);
+}
+
 export function CalendarView({ entries }: CalendarViewProps) {
   const isMobile = useIsMobile();
-  const todayIndex = new Date().getDay();
-  const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
+  const currentDay = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  
+  // Find if today is a working day, otherwise default to Tuesday (index 0)
+  const todayWorkingIndex = getDayIndex(currentDay);
+  const initialDayIndex = todayWorkingIndex >= 0 ? todayWorkingIndex : 0;
+  
+  const [selectedDayIndex, setSelectedDayIndex] = useState(initialDayIndex);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
-  
-  const currentDay = new Date().toLocaleDateString("en-US", { weekday: "long" });
-  const isViewingToday = selectedDayIndex === todayIndex;
   
   // Handle swipe gestures on mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -70,7 +79,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
     const diff = touchStartX.current - touchEndX;
     
     if (Math.abs(diff) > 50) {
-      if (diff > 0 && selectedDayIndex < 6) {
+      if (diff > 0 && selectedDayIndex < DAYS.length - 1) {
         setAnimationDirection('left');
         setSelectedDayIndex(prev => prev + 1);
       } else if (diff < 0 && selectedDayIndex > 0) {
@@ -84,16 +93,9 @@ export function CalendarView({ entries }: CalendarViewProps) {
     if (direction === 'prev' && selectedDayIndex > 0) {
       setAnimationDirection('right');
       setSelectedDayIndex(prev => prev - 1);
-    } else if (direction === 'next' && selectedDayIndex < 6) {
+    } else if (direction === 'next' && selectedDayIndex < DAYS.length - 1) {
       setAnimationDirection('left');
       setSelectedDayIndex(prev => prev + 1);
-    }
-  };
-
-  const goToToday = () => {
-    if (selectedDayIndex !== todayIndex) {
-      setAnimationDirection(selectedDayIndex > todayIndex ? 'right' : 'left');
-      setSelectedDayIndex(todayIndex);
     }
   };
 
@@ -109,7 +111,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
     const top = (startFromBase / 60) * HOUR_HEIGHT;
     const height = (duration / 60) * HOUR_HEIGHT;
     
-    return { top, height: Math.max(height, 40) }; // Minimum height of 40px
+    return { top, height: Math.max(height, 50) }; // Minimum height of 50px
   };
 
   // Get entries for a specific day
@@ -123,10 +125,26 @@ export function CalendarView({ entries }: CalendarViewProps) {
     return hour <= 12 ? `${hour}:00 AM` : `${hour - 12}:00 PM`;
   });
 
+  // List View Component
+  const ListView = () => (
+    <div className="space-y-6 p-4">
+      {DAYS.map((day) => {
+        const dayEntries = getEntriesForDay(day);
+        return (
+          <DaySchedule
+            key={day}
+            day={day}
+            entries={dayEntries}
+            isHoliday={false}
+          />
+        );
+      })}
+    </div>
+  );
+
   // Mobile single-day view
   if (isMobile) {
     const selectedDay = DAYS[selectedDayIndex];
-    const isHoliday = HOLIDAYS.includes(selectedDay as typeof HOLIDAYS[number]);
     const dayEntries = getEntriesForDay(selectedDay);
 
     return (
@@ -135,103 +153,109 @@ export function CalendarView({ entries }: CalendarViewProps) {
         <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground">{getWeekRangeString()}</p>
-            {!isViewingToday && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={goToToday}
-                className="h-7 text-xs gap-1.5 animate-scale-in"
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                Today
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
             <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigateDay('prev')}
-              disabled={selectedDayIndex === 0}
-              className="transition-transform active:scale-90"
+              variant="outline" 
+              size="sm"
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="h-7 text-xs gap-1.5 transition-all"
             >
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <div className="text-center">
-              <h3 className={cn(
-                "font-semibold text-lg transition-colors",
-                selectedDay === currentDay && "text-primary"
-              )}>
-                {selectedDay}
-              </h3>
-              {selectedDay === currentDay && (
-                <span className="text-xs text-primary animate-fade-in">Today</span>
+              {viewMode === 'grid' ? (
+                <>
+                  <List className="w-3.5 h-3.5" />
+                  List
+                </>
+              ) : (
+                <>
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  Grid
+                </>
               )}
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigateDay('next')}
-              disabled={selectedDayIndex === 6}
-              className="transition-transform active:scale-90"
-            >
-              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
-          
-          {/* Day pills for quick navigation */}
-          <div className="flex gap-1 mt-3 justify-center">
-            {SHORT_DAYS.map((day, index) => (
-              <button
-                key={day}
-                onClick={() => {
-                  setAnimationDirection(index > selectedDayIndex ? 'left' : 'right');
-                  setSelectedDayIndex(index);
-                }}
-                className={cn(
-                  "w-8 h-8 rounded-full text-xs font-medium transition-all duration-200",
-                  "hover:scale-110 active:scale-95",
-                  index === selectedDayIndex 
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" 
-                    : HOLIDAYS.includes(DAYS[index] as typeof HOLIDAYS[number])
-                      ? "bg-muted text-muted-foreground"
-                      : DAYS[index] === currentDay
-                        ? "bg-primary/20 text-primary ring-2 ring-primary/30"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {day[0]}
-              </button>
-            ))}
-          </div>
+
+          {viewMode === 'grid' && (
+            <>
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigateDay('prev')}
+                  disabled={selectedDayIndex === 0}
+                  className="transition-transform active:scale-90"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <div className="text-center">
+                  <h3 className={cn(
+                    "font-semibold text-lg transition-colors",
+                    selectedDay === currentDay && "text-primary"
+                  )}>
+                    {selectedDay}
+                  </h3>
+                  {selectedDay === currentDay && (
+                    <span className="text-xs text-primary animate-fade-in">Today</span>
+                  )}
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigateDay('next')}
+                  disabled={selectedDayIndex === DAYS.length - 1}
+                  className="transition-transform active:scale-90"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+              
+              {/* Day pills for quick navigation */}
+              <div className="flex gap-1 mt-3 justify-center">
+                {SHORT_DAYS.map((day, index) => (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      setAnimationDirection(index > selectedDayIndex ? 'left' : 'right');
+                      setSelectedDayIndex(index);
+                    }}
+                    className={cn(
+                      "w-9 h-9 rounded-full text-xs font-medium transition-all duration-200",
+                      "hover:scale-110 active:scale-95",
+                      index === selectedDayIndex 
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" 
+                        : DAYS[index] === currentDay
+                          ? "bg-primary/20 text-primary ring-2 ring-primary/30"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {day[0]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Calendar Grid - Mobile */}
-        <div 
-          key={selectedDayIndex}
-          className={cn(
-            "relative",
-            animationDirection === 'left' && "animate-slide-in-left",
-            animationDirection === 'right' && "animate-slide-in-right"
-          )}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onAnimationEnd={() => setAnimationDirection(null)}
-        >
-          {isHoliday ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground animate-fade-in">
-              <span className="text-4xl mb-3 animate-bounce-gentle">🎉</span>
-              <span className="text-lg font-medium">Holiday</span>
-              <span className="text-sm">No classes scheduled</span>
-            </div>
-          ) : (
+        {/* Content */}
+        {viewMode === 'list' ? (
+          <ListView />
+        ) : (
+          <div 
+            key={selectedDayIndex}
+            className={cn(
+              "relative",
+              animationDirection === 'left' && "animate-slide-in-left",
+              animationDirection === 'right' && "animate-slide-in-right"
+            )}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onAnimationEnd={() => setAnimationDirection(null)}
+          >
             <div className="flex">
               {/* Time Labels */}
               <div className="w-14 flex-shrink-0 border-r bg-muted/20">
                 {timeSlots.map((time) => (
                   <div 
                     key={time} 
-                    className="text-xs text-muted-foreground pr-2 text-right"
+                    className="text-xs text-muted-foreground pr-2 text-right flex items-start pt-1"
                     style={{ height: HOUR_HEIGHT }}
                   >
                     {time.replace(':00', '')}
@@ -245,7 +269,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
                 {timeSlots.map((_, index) => (
                   <div 
                     key={index}
-                    className="border-b border-dashed border-muted-foreground/10"
+                    className="border-b border-muted-foreground/10"
                     style={{ height: HOUR_HEIGHT }}
                   />
                 ))}
@@ -264,15 +288,15 @@ export function CalendarView({ entries }: CalendarViewProps) {
                           animationDelay: `${index * 50}ms`
                         }}
                       >
-                        <CalendarClassBlock entry={entry} compact={height < 60} />
+                        <CalendarClassBlock entry={entry} compact={height < 70} />
                       </div>
                     );
                   })}
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -287,124 +311,124 @@ export function CalendarView({ entries }: CalendarViewProps) {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={goToToday}
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
             className="h-7 text-xs gap-1.5 transition-all hover:scale-105 active:scale-95"
           >
-            <CalendarDays className="w-3.5 h-3.5" />
-            Today
+            {viewMode === 'grid' ? (
+              <>
+                <List className="w-3.5 h-3.5" />
+                List View
+              </>
+            ) : (
+              <>
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Grid View
+              </>
+            )}
           </Button>
         </div>
-        <div className="flex">
-          {/* Empty corner for time labels */}
-          <div className="w-16 flex-shrink-0 border-r" />
+
+        {viewMode === 'grid' && (
+          <div className="flex">
+            {/* Empty corner for time labels */}
+            <div className="w-16 flex-shrink-0 border-r" />
+            
+            {/* Day Headers */}
+            {DAYS.map((day, index) => {
+              const isToday = day === currentDay;
+              
+              return (
+                <div
+                  key={day}
+                  className={cn(
+                    "flex-1 text-center py-3 border-r last:border-r-0 transition-all duration-300",
+                    isToday && "bg-primary/10"
+                  )}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <span className={cn(
+                    "text-sm font-medium transition-colors",
+                    isToday && "text-primary font-semibold"
+                  )}>
+                    {day.slice(0, 3)}
+                  </span>
+                  {isToday && (
+                    <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1 animate-pulse" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      {viewMode === 'list' ? (
+        <ListView />
+      ) : (
+        <div className="flex overflow-x-auto" ref={scrollRef}>
+          {/* Time Labels */}
+          <div className="w-16 flex-shrink-0 border-r bg-muted/20">
+            {timeSlots.map((time, index) => (
+              <div 
+                key={time} 
+                className="text-xs text-muted-foreground px-2 text-right flex items-start pt-1 animate-fade-in"
+                style={{ 
+                  height: HOUR_HEIGHT,
+                  animationDelay: `${index * 20}ms`
+                }}
+              >
+                {time.replace(':00', '')}
+              </div>
+            ))}
+          </div>
           
-          {/* Day Headers */}
-          {DAYS.map((day, index) => {
-            const isHoliday = HOLIDAYS.includes(day as typeof HOLIDAYS[number]);
+          {/* Day Columns */}
+          {DAYS.map((day, dayIndex) => {
             const isToday = day === currentDay;
+            const dayEntries = getEntriesForDay(day);
             
             return (
               <div
                 key={day}
                 className={cn(
-                  "flex-1 text-center py-3 border-r last:border-r-0 transition-all duration-300",
-                  isHoliday && "bg-muted/50",
-                  isToday && "bg-primary/10"
+                  "flex-1 min-w-[140px] relative border-r last:border-r-0 transition-colors duration-300",
+                  isToday && "bg-primary/5 ring-1 ring-inset ring-primary/20"
                 )}
-                style={{ animationDelay: `${index * 30}ms` }}
               >
-                <span className={cn(
-                  "text-sm font-medium transition-colors",
-                  isHoliday && "text-muted-foreground",
-                  isToday && "text-primary font-semibold"
-                )}>
-                  {day.slice(0, 3)}
-                </span>
-                {isToday && (
-                  <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1 animate-pulse" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Calendar Grid - Desktop */}
-      <div className="flex overflow-x-auto" ref={scrollRef}>
-        {/* Time Labels */}
-        <div className="w-16 flex-shrink-0 border-r bg-muted/20">
-          {timeSlots.map((time, index) => (
-            <div 
-              key={time} 
-              className="text-xs text-muted-foreground px-2 text-right flex items-start pt-1 animate-fade-in"
-              style={{ 
-                height: HOUR_HEIGHT,
-                animationDelay: `${index * 20}ms`
-              }}
-            >
-              {time.replace(':00', '')}
-            </div>
-          ))}
-        </div>
-        
-        {/* Day Columns */}
-        {DAYS.map((day, dayIndex) => {
-          const isHoliday = HOLIDAYS.includes(day as typeof HOLIDAYS[number]);
-          const isToday = day === currentDay;
-          const dayEntries = getEntriesForDay(day);
-          
-          return (
-            <div
-              key={day}
-              className={cn(
-                "flex-1 min-w-[120px] relative border-r last:border-r-0 transition-colors duration-300",
-                isHoliday && "bg-muted/30",
-                isToday && "bg-primary/5 ring-1 ring-inset ring-primary/20"
-              )}
-            >
-              {/* Grid Lines */}
-              {timeSlots.map((_, index) => (
-                <div 
-                  key={index}
-                  className="border-b border-dashed border-muted-foreground/10"
-                  style={{ height: HOUR_HEIGHT }}
-                />
-              ))}
-              
-              {/* Holiday Overlay */}
-              {isHoliday && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-muted/80 px-3 py-1.5 rounded-full animate-fade-in">
-                    <span className="text-xs font-medium text-muted-foreground">Holiday</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Class Blocks */}
-              {!isHoliday && (
-                <div className="absolute inset-0 p-0.5">
+                {/* Grid Lines */}
+                {timeSlots.map((_, index) => (
+                  <div 
+                    key={index}
+                    className="border-b border-muted-foreground/10"
+                    style={{ height: HOUR_HEIGHT }}
+                  />
+                ))}
+                
+                {/* Class Blocks */}
+                <div className="absolute inset-0 p-1">
                   {dayEntries.map((entry, entryIndex) => {
                     const { top, height } = getBlockStyle(entry.time_slot);
                     return (
                       <div
                         key={entry.id}
-                        className="absolute left-0.5 right-0.5 animate-scale-in"
+                        className="absolute left-1 right-1 animate-scale-in"
                         style={{ 
                           top, 
                           height,
                           animationDelay: `${(dayIndex * 50) + (entryIndex * 30)}ms`
                         }}
                       >
-                        <CalendarClassBlock entry={entry} compact={height < 50} />
+                        <CalendarClassBlock entry={entry} compact={height < 60} />
                       </div>
                     );
                   })}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

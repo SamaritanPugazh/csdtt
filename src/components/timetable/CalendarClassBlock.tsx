@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { BookOpen, FlaskConical, MapPin, Clock, User, X } from "lucide-react";
+import { BookOpen, FlaskConical, MapPin, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -34,48 +34,53 @@ export function CalendarClassBlock({ entry, compact = false }: CalendarClassBloc
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "w-full h-full rounded-lg p-1.5 text-left transition-all overflow-hidden",
+          "w-full h-full rounded-lg p-2 text-left transition-all overflow-hidden",
           "hover:scale-[1.02] hover:shadow-lg hover:z-10 relative",
           "focus:outline-none focus:ring-2 focus:ring-offset-1",
           isTheory 
-            ? "bg-theory/90 text-theory-foreground hover:bg-theory focus:ring-theory/50" 
-            : "bg-lab/90 text-lab-foreground hover:bg-lab focus:ring-lab/50",
+            ? "bg-theory text-theory-foreground hover:bg-theory/90 focus:ring-theory/50" 
+            : "bg-lab text-lab-foreground hover:bg-lab/90 focus:ring-lab/50",
           "shadow-md"
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full gap-0.5">
           {compact ? (
             // Compact view for short time slots
-            <div className="flex items-center gap-1 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
               {isTheory ? (
-                <BookOpen className="w-3 h-3 flex-shrink-0 opacity-80" />
+                <BookOpen className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
               ) : (
-                <FlaskConical className="w-3 h-3 flex-shrink-0 opacity-80" />
+                <FlaskConical className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
               )}
-              <span className="text-[10px] font-medium truncate">{entry.course_code}</span>
+              <span className="text-xs font-semibold truncate">{entry.course_code}</span>
+              {entry.batch !== "ALL" && (
+                <span className="text-[10px] font-medium opacity-80 ml-auto bg-black/10 px-1 rounded">
+                  {entry.batch}
+                </span>
+              )}
             </div>
           ) : (
             // Full view
             <>
-              <div className="flex items-center gap-1 mb-0.5">
+              <div className="flex items-center gap-1.5">
                 {isTheory ? (
-                  <BookOpen className="w-3 h-3 flex-shrink-0 opacity-80" />
+                  <BookOpen className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
                 ) : (
-                  <FlaskConical className="w-3 h-3 flex-shrink-0 opacity-80" />
+                  <FlaskConical className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
                 )}
-                <span className="text-[10px] font-bold opacity-90">{entry.course_code}</span>
+                <span className="text-xs font-bold">{entry.course_code}</span>
                 {entry.batch !== "ALL" && (
-                  <span className="text-[9px] font-medium opacity-70 ml-auto">
+                  <span className="text-[10px] font-semibold opacity-80 ml-auto bg-black/10 px-1.5 py-0.5 rounded">
                     {entry.batch}
                   </span>
                 )}
               </div>
-              <p className="text-[10px] font-medium leading-tight line-clamp-2 flex-1">
+              <p className="text-xs font-medium leading-tight line-clamp-2 flex-1 opacity-95">
                 {entry.subject_name}
               </p>
-              <div className="flex items-center gap-1 mt-auto opacity-80">
-                <MapPin className="w-2.5 h-2.5" />
-                <span className="text-[9px]">{entry.room_number}</span>
+              <div className="flex items-center gap-1.5 mt-auto opacity-90">
+                <MapPin className="w-3 h-3" />
+                <span className="text-[11px] font-medium">{entry.room_number}</span>
               </div>
             </>
           )}

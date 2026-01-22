@@ -125,10 +125,6 @@ export default function Dashboard() {
             <div className="w-4 h-4 rounded bg-lab" />
             <span className="text-sm text-muted-foreground">Lab</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-muted border-2 border-dashed border-muted-foreground/30" />
-            <span className="text-sm text-muted-foreground">Holiday</span>
-          </div>
         </div>
 
         {/* Calendar Timetable View */}

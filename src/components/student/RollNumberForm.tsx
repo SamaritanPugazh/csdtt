@@ -31,7 +31,7 @@ export function RollNumberForm({ onSubmit }: RollNumberFormProps) {
     }
 
     if (!isValidRollNumber(trimmed)) {
-      setError("Invalid roll number. Must be 231701001-231701063 or 231701501");
+      setError("Invalid roll number");
       return;
     }
 
@@ -48,7 +48,6 @@ export function RollNumberForm({ onSubmit }: RollNumberFormProps) {
         <Label htmlFor="rollNumber">Roll Number</Label>
         <Input
           id="rollNumber"
-          placeholder="e.g., 231701001"
           value={rollNumber}
           onChange={(e) => setRollNumber(e.target.value.replace(/\D/g, "").slice(0, 9))}
           className={error ? "border-destructive" : ""}
@@ -56,9 +55,6 @@ export function RollNumberForm({ onSubmit }: RollNumberFormProps) {
           inputMode="numeric"
         />
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <p className="text-xs text-muted-foreground">
-          Valid: 231701001-231701063 or 231701501
-        </p>
       </div>
 
       <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>

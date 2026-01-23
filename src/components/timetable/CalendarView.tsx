@@ -125,22 +125,69 @@ export function CalendarView({ entries }: CalendarViewProps) {
     return hour <= 12 ? `${hour}:00 AM` : `${hour - 12}:00 PM`;
   });
 
+  const [listViewDay, setListViewDay] = useState<string>("all");
+
   // List View Component
-  const ListView = () => (
-    <div className="space-y-6 p-4">
-      {DAYS.map((day) => {
-        const dayEntries = getEntriesForDay(day);
-        return (
-          <DaySchedule
-            key={day}
-            day={day}
-            entries={dayEntries}
-            isHoliday={false}
-          />
-        );
-      })}
-    </div>
-  );
+  const ListView = () => {
+    const daysToShow = listViewDay === "all" ? DAYS : [listViewDay as typeof DAYS[number]];
+    
+    return (
+      <div className="p-4 space-y-4">
+        {/* Day Selection */}
+        <div className="flex flex-wrap gap-2 pb-3 border-b">
+          <button
+            onClick={() => setListViewDay("all")}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+              "hover:scale-105 active:scale-95",
+              listViewDay === "all"
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            All Days
+          </button>
+          {DAYS.map((day) => (
+            <button
+              key={day}
+              onClick={() => setListViewDay(day)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+                "hover:scale-105 active:scale-95",
+                listViewDay === day
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                  : day === currentDay
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/30"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {day.slice(0, 3)}
+            </button>
+          ))}
+        </div>
+        
+        {/* Day Schedules */}
+        <div className="space-y-6">
+          {daysToShow.map((day, index) => {
+            const dayEntries = getEntriesForDay(day);
+            return (
+              <div 
+                key={day} 
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <DaySchedule
+                  day={day}
+                  entries={dayEntries}
+                  isHoliday={false}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   // Mobile single-day view
   if (isMobile) {

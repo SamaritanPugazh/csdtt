@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, Save, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Loader2, Search, Filter } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
@@ -62,6 +63,9 @@ export function TimetableManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [filterDay, setFilterDay] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterBatch, setFilterBatch] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const [formData, setFormData] = useState(initialFormData);
@@ -173,36 +177,41 @@ export function TimetableManager() {
     }
   };
 
-  const filteredEntries =
-    filterDay === "all"
-      ? entries
-      : entries.filter((e) => e.day === filterDay);
+  const filteredEntries = entries.filter((entry) => {
+    const matchesDay = filterDay === "all" || entry.day === filterDay;
+    const matchesType = filterType === "all" || entry.class_type === filterType;
+    const matchesBatch = filterBatch === "all" || entry.batch === filterBatch;
+    const matchesSearch = searchQuery === "" || 
+      entry.subject_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (entry.staff_name && entry.staff_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    return matchesDay && matchesType && matchesBatch && matchesSearch;
+  });
+
+  const hasActiveFilters = filterDay !== "all" || filterType !== "all" || filterBatch !== "all" || searchQuery !== "";
+
+  const clearFilters = () => {
+    setFilterDay("all");
+    setFilterType("all");
+    setFilterBatch("all");
+    setSearchQuery("");
+  };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
+    return <div className="text-center py-8 text-muted-foreground animate-pulse">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Manage Timetable</h2>
-          <Badge variant="secondary">{entries.length} entries</Badge>
-        </div>
-        <div className="flex gap-2">
-          <Select value={filterDay} onValueChange={setFilterDay}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Filter by day" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Days</SelectItem>
-              {DAYS.map((day) => (
-                <SelectItem key={day} value={day}>
-                  {day}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Manage Timetable</h2>
+            <Badge variant="secondary" className="transition-all">
+              {filteredEntries.length} of {entries.length}
+            </Badge>
+          </div>
           <Dialog
             open={isDialogOpen}
             onOpenChange={(open) => {
@@ -211,12 +220,12 @@ export function TimetableManager() {
             }}
           >
             <DialogTrigger asChild>
-              <Button className="gap-2 gradient-primary">
+              <Button className="gap-2 gradient-primary transition-all hover:scale-105 active:scale-95">
                 <Plus className="w-4 h-4" />
                 Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg animate-scale-in">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Edit Entry" : "Add Timetable Entry"}
@@ -358,11 +367,12 @@ export function TimetableManager() {
                       setIsDialogOpen(false);
                       resetForm();
                     }}
+                    className="transition-all hover:scale-105 active:scale-95"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSaving}>
+                  <Button type="submit" disabled={isSaving} className="transition-all hover:scale-105 active:scale-95">
                     {isSaving ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
@@ -375,16 +385,85 @@ export function TimetableManager() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search subject, code, or staff..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 transition-all focus:scale-[1.01]"
+            />
+          </div>
+          
+          {/* Day Filter */}
+          <Select value={filterDay} onValueChange={setFilterDay}>
+            <SelectTrigger className="w-[120px] h-9 transition-all hover:border-primary">
+              <SelectValue placeholder="Day" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Days</SelectItem>
+              {DAYS.map((day) => (
+                <SelectItem key={day} value={day}>{day.slice(0, 3)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* Type Filter */}
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[110px] h-9 transition-all hover:border-primary">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Theory">Theory</SelectItem>
+              <SelectItem value="Lab">Lab</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Batch Filter */}
+          <Select value={filterBatch} onValueChange={setFilterBatch}>
+            <SelectTrigger className="w-[100px] h-9 transition-all hover:border-primary">
+              <SelectValue placeholder="Batch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="ALL">ALL</SelectItem>
+              <SelectItem value="B1">B1</SelectItem>
+              <SelectItem value="B2">B2</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearFilters}
+              className="h-9 text-xs transition-all hover:scale-105"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
       </div>
 
       {filteredEntries.length === 0 ? (
-        <Card>
+        <Card className="animate-fade-in">
           <CardContent className="py-8 text-center text-muted-foreground">
-            No timetable entries yet. Add your first one!
+            {entries.length === 0 
+              ? "No timetable entries yet. Add your first one!"
+              : "No entries match the current filters."}
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="animate-fade-in overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
@@ -401,8 +480,14 @@ export function TimetableManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEntries.map((entry) => (
-                    <TableRow key={entry.id}>
+                  {filteredEntries.map((entry, index) => (
+                    <TableRow 
+                      key={entry.id}
+                      className={cn(
+                        "transition-all duration-200 hover:bg-muted/50 animate-fade-in",
+                      )}
+                      style={{ animationDelay: `${index * 20}ms` }}
+                    >
                       <TableCell className="font-medium">{entry.day.slice(0, 3)}</TableCell>
                       <TableCell className="text-sm">{entry.time_slot}</TableCell>
                       <TableCell className="font-mono text-xs">{entry.course_code}</TableCell>
@@ -412,17 +497,18 @@ export function TimetableManager() {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={
+                          className={cn(
+                            "transition-all",
                             entry.class_type === "Theory"
                               ? "border-theory/30 text-theory"
                               : "border-lab/30 text-lab"
-                          }
+                          )}
                         >
                           {entry.class_type}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{entry.batch}</Badge>
+                        <Badge variant="secondary" className="transition-all">{entry.batch}</Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{entry.room_number}</TableCell>
                       <TableCell className="text-right">
@@ -431,13 +517,14 @@ export function TimetableManager() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(entry)}
+                            className="transition-all hover:scale-110 hover:text-primary"
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-destructive"
+                            className="text-destructive transition-all hover:scale-110"
                             onClick={() => handleDelete(entry.id)}
                           >
                             <Trash2 className="w-4 h-4" />

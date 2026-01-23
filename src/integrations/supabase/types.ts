@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          display_duration: number | null
           id: string
           is_active: boolean
           title: string
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          display_duration?: number | null
           id?: string
           is_active?: boolean
           title: string
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          display_duration?: number | null
           id?: string
           is_active?: boolean
           title?: string

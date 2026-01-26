@@ -101,6 +101,66 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          code: string
+          created_at: string
+          credit_hours: number | null
+          department: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          credit_hours?: number | null
+          department?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          credit_hours?: number | null
+          department?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teachers: {
+        Row: {
+          created_at: string
+          department: string | null
+          id: string
+          name: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          name: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          name?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       timetable: {
         Row: {
           batch: Database["public"]["Enums"]["batch_type"]

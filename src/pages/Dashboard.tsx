@@ -5,6 +5,7 @@ import { useStudent, BATCH_CONFIGURABLE_COURSES } from "@/hooks/useStudent";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarView } from "@/components/timetable/CalendarView";
 import { AnnouncementBanner } from "@/components/announcements/AnnouncementBanner";
+import { TodaySummary } from "@/components/dashboard/TodaySummary";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, FlaskConical } from "lucide-react";
@@ -114,6 +115,9 @@ export default function Dashboard() {
 
         {/* Announcements */}
         <AnnouncementBanner />
+
+        {/* Today Summary */}
+        <TodaySummary entries={filteredTimetable} />
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-card rounded-xl border">

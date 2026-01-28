@@ -28,8 +28,11 @@ export function TodaySummary({ entries }: TodaySummaryProps) {
     return entries
       .filter((entry) => entry.day === today)
       .sort((a, b) => {
-        const timeA = a.time_slot.split(" - ")[0];
-        const timeB = b.time_slot.split(" - ")[0];
+        // Handle both "HH:MM - HH:MM" and "HH:MM-HH:MM" formats
+        const partsA = a.time_slot.includes(" - ") ? a.time_slot.split(" - ") : a.time_slot.split("-");
+        const partsB = b.time_slot.includes(" - ") ? b.time_slot.split(" - ") : b.time_slot.split("-");
+        const timeA = partsA[0]?.trim() || "";
+        const timeB = partsB[0]?.trim() || "";
         return timeA.localeCompare(timeB);
       });
   }, [entries]);

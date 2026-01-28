@@ -99,9 +99,12 @@ export function CalendarView({ entries }: CalendarViewProps) {
     }
   };
 
-  // Calculate position and height for a class block
+// Calculate position and height for a class block
   const getBlockStyle = (timeSlot: string) => {
-    const [startTime, endTime] = timeSlot.split(" - ");
+    // Handle both "HH:MM - HH:MM" and "HH:MM-HH:MM" formats
+    const parts = timeSlot.includes(" - ") ? timeSlot.split(" - ") : timeSlot.split("-");
+    const startTime = parts[0]?.trim() || "8:00";
+    const endTime = parts[1]?.trim() || "9:00";
     const startMinutes = parseTimeToMinutes(startTime);
     const endMinutes = parseTimeToMinutes(endTime);
     

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Edit2, Search, Filter, X, ChevronDown, ChevronUp, LayoutGrid, List } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { TimetableEntryForm } from "./TimetableEntryForm";
+import { AdminGridView } from "./AdminGridView";
 
-const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
 interface TimetableEntry {
   id: string;
@@ -52,6 +53,7 @@ export function TimetableManager() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterBatch, setFilterBatch] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const { toast } = useToast();
 
   const fetchEntries = async () => {
@@ -131,7 +133,7 @@ export function TimetableManager() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with Add Button */}
+      {/* Header with Add Button and View Toggle */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-2">
@@ -140,25 +142,46 @@ export function TimetableManager() {
               {filteredEntries.length} of {entries.length}
             </Badge>
           </div>
-          <Button
-            onClick={() => {
-              setEditingEntry(null);
-              setIsFormOpen(!isFormOpen);
-            }}
-            className="gap-2 transition-all hover:scale-105 active:scale-95"
-          >
-            {isFormOpen ? (
-              <>
-                <ChevronUp className="w-4 h-4" />
-                Close Form
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                Add Entry
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            {/* View Mode Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewMode(viewMode === "table" ? "grid" : "table")}
+              className="gap-2 transition-all hover:scale-105 active:scale-95"
+            >
+              {viewMode === "table" ? (
+                <>
+                  <LayoutGrid className="w-4 h-4" />
+                  Grid View
+                </>
+              ) : (
+                <>
+                  <List className="w-4 h-4" />
+                  Table View
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingEntry(null);
+                setIsFormOpen(!isFormOpen);
+              }}
+              className="gap-2 transition-all hover:scale-105 active:scale-95"
+            >
+              {isFormOpen ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  Close Form
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Add Entry
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Collapsible Entry Form */}
@@ -247,7 +270,7 @@ export function TimetableManager() {
         </div>
       </div>
 
-      {/* Entries Table */}
+      {/* View Content */}
       {filteredEntries.length === 0 ? (
         <Card className="animate-fade-in">
           <CardContent className="py-8 text-center text-muted-foreground">
@@ -256,6 +279,12 @@ export function TimetableManager() {
               : "No entries match the current filters."}
           </CardContent>
         </Card>
+      ) : viewMode === "grid" ? (
+        <AdminGridView 
+          entries={filteredEntries} 
+          onEdit={handleEdit} 
+          onDelete={handleDelete} 
+        />
       ) : (
         <Card className="animate-fade-in overflow-hidden">
           <CardContent className="p-0">

@@ -16,8 +16,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TeacherManager } from "./TeacherManager";
 import { SubjectManager } from "./SubjectManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TimePicker } from "@/components/ui/time-picker";
 
-const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
 interface Teacher {
   id: string;
@@ -68,7 +69,8 @@ export function TimetableEntryForm({
 
   const [formData, setFormData] = useState({
     day: "Tuesday" as (typeof DAYS)[number],
-    time_slot: "",
+    start_time: "09:00",
+    end_time: "10:00",
     class_type: "Theory" as "Theory" | "Lab",
     batch: "ALL" as "B1" | "B2" | "ALL",
     room_number: "",
@@ -76,9 +78,17 @@ export function TimetableEntryForm({
 
   useEffect(() => {
     if (editingEntry) {
+      // Parse time_slot to get start and end times
+      const parts = editingEntry.time_slot.includes(" - ") 
+        ? editingEntry.time_slot.split(" - ") 
+        : editingEntry.time_slot.split("-");
+      const startTime = parts[0]?.trim() || "09:00";
+      const endTime = parts[1]?.trim() || "10:00";
+      
       setFormData({
         day: editingEntry.day as (typeof DAYS)[number],
-        time_slot: editingEntry.time_slot,
+        start_time: startTime,
+        end_time: endTime,
         class_type: editingEntry.class_type,
         batch: editingEntry.batch,
         room_number: editingEntry.room_number,
@@ -86,19 +96,23 @@ export function TimetableEntryForm({
     }
   }, [editingEntry]);
 
+  // Generate time_slot string from start and end times
+  const getTimeSlot = () => `${formData.start_time} - ${formData.end_time}`;
+
   // Check for conflicts
   useEffect(() => {
-    if (!formData.day || !formData.time_slot || !formData.room_number) {
+    if (!formData.day || !formData.start_time || !formData.end_time || !formData.room_number) {
       setConflict(null);
       return;
     }
 
+    const timeSlot = getTimeSlot();
     const conflictingEntry = existingEntries.find((entry) => {
       if (editingEntry && entry.id === editingEntry.id) return false;
       
       return (
         entry.day === formData.day &&
-        entry.time_slot === formData.time_slot &&
+        entry.time_slot === timeSlot &&
         entry.room_number === formData.room_number
       );
     });
@@ -110,7 +124,7 @@ export function TimetableEntryForm({
     } else {
       setConflict(null);
     }
-  }, [formData.day, formData.time_slot, formData.room_number, existingEntries, editingEntry]);
+  }, [formData.day, formData.start_time, formData.end_time, formData.room_number, existingEntries, editingEntry]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,9 +137,20 @@ export function TimetableEntryForm({
       return;
     }
 
-    if (!formData.time_slot || !formData.room_number) {
+    if (!formData.start_time || !formData.end_time || !formData.room_number) {
       toast({
         title: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate day is a working day (database only supports Tue-Sat)
+    const workingDays = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    if (!workingDays.includes(formData.day)) {
+      toast({
+        title: "Invalid day selected",
+        description: "Only Tuesday through Saturday are valid working days",
         variant: "destructive",
       });
       return;
@@ -142,9 +167,10 @@ export function TimetableEntryForm({
 
     setIsSaving(true);
 
+    const timeSlot = getTimeSlot();
     const payload = {
-      day: formData.day,
-      time_slot: formData.time_slot,
+      day: formData.day as "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday",
+      time_slot: timeSlot,
       course_code: selectedSubject.code,
       subject_name: selectedSubject.name,
       class_type: formData.class_type,
@@ -261,15 +287,17 @@ export function TimetableEntryForm({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="time_slot">Time Slot</Label>
-          <Input
-            id="time_slot"
-            value={formData.time_slot}
-            onChange={(e) => setFormData({ ...formData, time_slot: e.target.value })}
-            placeholder="e.g., 09:00 - 10:00"
-          />
-        </div>
+        <TimePicker
+          label="Start Time"
+          value={formData.start_time}
+          onChange={(value) => setFormData({ ...formData, start_time: value })}
+        />
+
+        <TimePicker
+          label="End Time"
+          value={formData.end_time}
+          onChange={(value) => setFormData({ ...formData, end_time: value })}
+        />
 
         <div className="space-y-2">
           <Label>Class Type</Label>

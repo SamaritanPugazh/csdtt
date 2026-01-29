@@ -322,9 +322,12 @@ export function TeacherManager({ onSelect, selectedId, compact = false }: Teache
                 <p className="font-medium text-sm">
                   {teacher.title} {teacher.name}
                 </p>
-                {teacher.department && (
-                  <p className="text-xs text-muted-foreground">{teacher.department}</p>
-                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-mono">{teacher.id.slice(0, 8)}</span>
+                  {teacher.department && (
+                    <span>• {teacher.department}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <Badge

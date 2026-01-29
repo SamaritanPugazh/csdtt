@@ -6,7 +6,10 @@ import { CalendarClassBlock } from "./CalendarClassBlock";
 import { DaySchedule } from "./DaySchedule";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Only working days (no Sunday/Monday holidays)
+// All days including Sunday/Monday for List view
+const ALL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const ALL_SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+// Working days only for Grid view (no Sunday/Monday holidays)
 const DAYS = ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const SHORT_DAYS = ["Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -128,20 +131,24 @@ export function CalendarView({ entries }: CalendarViewProps) {
     return hour <= 12 ? `${hour}:00 AM` : `${hour - 12}:00 PM`;
   });
 
-  // Get today's working day or default to Tuesday
-  const todayIndex = getDayIndex(currentDay);
-  const defaultListDay = todayIndex >= 0 ? DAYS[todayIndex] : DAYS[0];
+  // Get today's day or default to Tuesday for List view
+  const todayAllDaysIndex = ALL_DAYS.indexOf(currentDay as typeof ALL_DAYS[number]);
+  const defaultListDay = todayAllDaysIndex >= 0 ? ALL_DAYS[todayAllDaysIndex] : ALL_DAYS[0];
   const [listViewDay, setListViewDay] = useState<string>(defaultListDay);
 
-  // List View Component
+  // List View Component - shows ALL days including Sunday & Monday
   const ListView = () => {
+    // Check if selected day is a holiday (Sunday or Monday)
+    const isHoliday = listViewDay === "Sunday" || listViewDay === "Monday";
+    
     return (
       <div className="p-4 space-y-4">
-        {/* Day Selection - Today first, then other days */}
+        {/* Day Selection - All 7 days */}
         <div className="flex flex-wrap gap-2 pb-3 border-b">
-          {DAYS.map((day) => {
+          {ALL_DAYS.map((day, index) => {
             const isToday = day === currentDay;
             const isSelected = listViewDay === day;
+            const isDayHoliday = day === "Sunday" || day === "Monday";
             
             return (
               <button
@@ -154,10 +161,12 @@ export function CalendarView({ entries }: CalendarViewProps) {
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
                     : isToday
                       ? "bg-primary/20 text-primary ring-1 ring-primary/30"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      : isDayHoliday
+                        ? "bg-muted/50 text-muted-foreground/60 hover:bg-muted/70"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
-                {day.slice(0, 3)}
+                {ALL_SHORT_DAYS[index]}
                 {isToday && !isSelected && (
                   <span className="ml-1 text-xs opacity-70">•</span>
                 )}
@@ -171,7 +180,7 @@ export function CalendarView({ entries }: CalendarViewProps) {
           <DaySchedule
             day={listViewDay}
             entries={getEntriesForDay(listViewDay)}
-            isHoliday={false}
+            isHoliday={isHoliday}
           />
         </div>
       </div>

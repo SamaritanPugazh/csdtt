@@ -68,12 +68,10 @@ export default {
         },
         theory: {
           DEFAULT: "hsl(var(--theory))",
-          foreground: "hsl(var(--theory-foreground))",
           light: "hsl(var(--theory-light))",
         },
         lab: {
           DEFAULT: "hsl(var(--lab))",
-          foreground: "hsl(var(--lab-foreground))",
           light: "hsl(var(--lab-light))",
         },
         success: "hsl(var(--success))",

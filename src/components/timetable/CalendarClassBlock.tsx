@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { BookOpen, FlaskConical, MapPin, Clock, User } from "lucide-react";
+import { BookOpen, FlaskConical, MapPin, Clock, User, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -27,19 +29,25 @@ interface CalendarClassBlockProps {
 
 export function CalendarClassBlock({ entry, compact = false }: CalendarClassBlockProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const isTheory = entry.class_type === "Theory";
+
+  const handleVisitCourse = () => {
+    setIsOpen(false);
+    navigate(`/course/${entry.course_code}`);
+  };
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "w-full h-full rounded-lg p-2 text-left transition-all overflow-hidden",
+          "w-full h-full rounded-lg p-2 text-left transition-all overflow-hidden text-white",
           "hover:scale-[1.02] hover:shadow-lg hover:z-10 relative",
           "focus:outline-none focus:ring-2 focus:ring-offset-1",
           isTheory 
-            ? "bg-theory text-theory-foreground hover:bg-theory/90 focus:ring-theory/50" 
-            : "bg-lab text-lab-foreground hover:bg-lab/90 focus:ring-lab/50",
+            ? "bg-theory hover:bg-theory/90 focus:ring-theory/50" 
+            : "bg-lab hover:bg-lab/90 focus:ring-lab/50",
           "shadow-md"
         )}
       >
@@ -152,6 +160,15 @@ export function CalendarClassBlock({ entry, compact = false }: CalendarClassBloc
                 </div>
               )}
             </div>
+
+            <Button 
+              onClick={handleVisitCourse}
+              className="w-full mt-4 gap-2"
+              variant="default"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Visit Course
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

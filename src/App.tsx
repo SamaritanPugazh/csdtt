@@ -10,6 +10,7 @@ import StudentEntry from "./pages/StudentEntry";
 import AdminAuth from "./pages/AdminAuth";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import CourseDetails from "./pages/CourseDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/admin-login" element={<AdminAuth />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/course/:courseCode" element={<CourseDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </StudentProvider>

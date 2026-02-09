@@ -26,7 +26,6 @@ interface StudentContextType {
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
 const STUDENT_STORAGE_KEY = "csd_student_data";
-const BATCH_CONFIGURABLE_COURSES = ["AI23331", "CD23631", "CD23632"];
 
 export function StudentProvider({ children }: { children: ReactNode }) {
   const [student, setStudent] = useState<StudentData | null>(null);
@@ -129,7 +128,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   };
 
   const updateSubjectBatch = async (courseCode: string, batch: "B1" | "B2") => {
-    if (!student?.rollNumber || !BATCH_CONFIGURABLE_COURSES.includes(courseCode)) {
+    if (!student?.rollNumber) {
       return;
     }
 
@@ -190,5 +189,3 @@ export function useStudent() {
   }
   return context;
 }
-
-export { BATCH_CONFIGURABLE_COURSES };

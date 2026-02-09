@@ -22,6 +22,7 @@ const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 
 interface Teacher {
   id: string;
+  teacher_code?: string | null;
   title: string;
   name: string;
   department: string | null;
@@ -33,7 +34,8 @@ interface Subject {
   code: string;
   name: string;
   department: string | null;
-  credit_hours: number | null;
+  split_students?: boolean;
+  num_batches?: number | null;
 }
 
 interface TimetableEntry {

@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, Save, X, Loader2, Search, BookOpen } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Loader2, Search, BookOpen, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,8 @@ interface Subject {
   code: string;
   name: string;
   department: string | null;
-  credit_hours: number | null;
+  split_students: boolean;
+  num_batches: number | null;
   created_at: string;
 }
 
@@ -29,7 +30,8 @@ const initialFormData = {
   code: "",
   name: "",
   department: "",
-  credit_hours: "",
+  split_students: false,
+  num_batches: "2",
 };
 
 interface SubjectManagerProps {
@@ -87,7 +89,8 @@ export function SubjectManager({ onSelect, selectedId, compact = false }: Subjec
       code: formData.code.trim().toUpperCase(),
       name: formData.name.trim(),
       department: formData.department.trim() || null,
-      credit_hours: formData.credit_hours ? parseInt(formData.credit_hours) : null,
+      split_students: formData.split_students,
+      num_batches: formData.split_students ? parseInt(formData.num_batches) || 2 : null,
     };
 
     if (editingId) {
@@ -126,7 +129,8 @@ export function SubjectManager({ onSelect, selectedId, compact = false }: Subjec
       code: subject.code,
       name: subject.name,
       department: subject.department || "",
-      credit_hours: subject.credit_hours?.toString() || "",
+      split_students: subject.split_students,
+      num_batches: subject.num_batches?.toString() || "2",
     });
     setEditingId(subject.id);
     setIsDialogOpen(true);
@@ -195,15 +199,12 @@ export function SubjectManager({ onSelect, selectedId, compact = false }: Subjec
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="credit_hours">Credit Hours</Label>
+                  <Label htmlFor="department">Department</Label>
                   <Input
-                    id="credit_hours"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.credit_hours}
-                    onChange={(e) => setFormData({ ...formData, credit_hours: e.target.value })}
-                    placeholder="e.g., 3"
+                    id="department"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="e.g., Computer Science"
                   />
                 </div>
               </div>
@@ -218,14 +219,42 @@ export function SubjectManager({ onSelect, selectedId, compact = false }: Subjec
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  placeholder="e.g., Computer Science"
-                />
+              {/* Split Students Checkbox */}
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="split_students"
+                    checked={formData.split_students}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, split_students: checked === true })
+                    }
+                  />
+                  <Label htmlFor="split_students" className="font-normal cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Split Students into Batches
+                    </div>
+                  </Label>
+                </div>
+                
+                {formData.split_students && (
+                  <div className="pl-6 space-y-2 animate-fade-in">
+                    <Label htmlFor="num_batches">Number of Batches</Label>
+                    <Input
+                      id="num_batches"
+                      type="number"
+                      min="2"
+                      max="10"
+                      value={formData.num_batches}
+                      onChange={(e) => setFormData({ ...formData, num_batches: e.target.value })}
+                      placeholder="e.g., 2"
+                      className="w-24"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Students will select their batch (B1, B2, etc.) in settings
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2 justify-end">
@@ -287,8 +316,11 @@ export function SubjectManager({ onSelect, selectedId, compact = false }: Subjec
                   <Badge variant="outline" className="font-mono text-xs">
                     {subject.code}
                   </Badge>
-                  {subject.credit_hours && (
-                    <span className="text-xs text-muted-foreground">{subject.credit_hours} hrs</span>
+                  {subject.split_students && subject.num_batches && (
+                    <Badge variant="secondary" className="text-xs gap-1">
+                      <Users className="w-3 h-3" />
+                      {subject.num_batches} batches
+                    </Badge>
                   )}
                 </div>
                 <p className="font-medium text-sm mt-1">{subject.name}</p>

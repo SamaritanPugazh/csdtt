@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      course_units: {
+        Row: {
+          created_at: string
+          id: string
+          subject_id: string
+          syllabus: string | null
+          unit_name: string
+          unit_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subject_id: string
+          syllabus?: string | null
+          unit_name: string
+          unit_number: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subject_id?: string
+          syllabus?: string | null
+          unit_name?: string
+          unit_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_units_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           batch: Database["public"]["Enums"]["batch_type"]
@@ -109,6 +147,8 @@ export type Database = {
           department: string | null
           id: string
           name: string
+          num_batches: number | null
+          split_students: boolean
           updated_at: string
         }
         Insert: {
@@ -118,6 +158,8 @@ export type Database = {
           department?: string | null
           id?: string
           name: string
+          num_batches?: number | null
+          split_students?: boolean
           updated_at?: string
         }
         Update: {
@@ -127,6 +169,8 @@ export type Database = {
           department?: string | null
           id?: string
           name?: string
+          num_batches?: number | null
+          split_students?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -138,6 +182,7 @@ export type Database = {
           id: string
           name: string
           status: string
+          teacher_code: string | null
           title: string
           updated_at: string
         }
@@ -147,6 +192,7 @@ export type Database = {
           id?: string
           name: string
           status?: string
+          teacher_code?: string | null
           title: string
           updated_at?: string
         }
@@ -156,6 +202,7 @@ export type Database = {
           id?: string
           name?: string
           status?: string
+          teacher_code?: string | null
           title?: string
           updated_at?: string
         }

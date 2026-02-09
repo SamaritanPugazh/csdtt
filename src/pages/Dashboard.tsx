@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { useStudent, BATCH_CONFIGURABLE_COURSES } from "@/hooks/useStudent";
+import { useStudent } from "@/hooks/useStudent";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarView } from "@/components/timetable/CalendarView";
 import { AnnouncementBanner } from "@/components/announcements/AnnouncementBanner";
@@ -25,6 +25,7 @@ export default function Dashboard() {
   const { student, isLoading: studentLoading, getSubjectBatch } = useStudent();
   const navigate = useNavigate();
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [splitSubjectCodes, setSplitSubjectCodes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,22 +35,34 @@ export default function Dashboard() {
   }, [student, studentLoading, navigate]);
 
   useEffect(() => {
-    const fetchTimetable = async () => {
+    const fetchData = async () => {
       if (!student?.rollNumber) return;
 
-      const { data, error } = await supabase
-        .from("timetable")
-        .select("*")
-        .order("time_slot", { ascending: true });
+      // Fetch timetable and split subjects in parallel
+      const [timetableRes, subjectsRes] = await Promise.all([
+        supabase
+          .from("timetable")
+          .select("*")
+          .order("time_slot", { ascending: true }),
+        supabase
+          .from("subjects")
+          .select("code")
+          .eq("split_students", true),
+      ]);
 
-      if (data && !error) {
-        setTimetable(data as TimetableEntry[]);
+      if (timetableRes.data && !timetableRes.error) {
+        setTimetable(timetableRes.data as TimetableEntry[]);
       }
+
+      if (subjectsRes.data && !subjectsRes.error) {
+        setSplitSubjectCodes(subjectsRes.data.map((s) => s.code));
+      }
+
       setIsLoading(false);
     };
 
     if (student?.rollNumber) {
-      fetchTimetable();
+      fetchData();
     }
   }, [student?.rollNumber]);
 
@@ -61,13 +74,13 @@ export default function Dashboard() {
       // Show labs that are for ALL batches
       if (entry.batch === "ALL") return true;
       
-      // For batch-configurable courses, use the student's preference
-      if (BATCH_CONFIGURABLE_COURSES.includes(entry.course_code)) {
+      // For split-student subjects, use the student's preference
+      if (splitSubjectCodes.includes(entry.course_code)) {
         const preferredBatch = getSubjectBatch(entry.course_code);
         return entry.batch === preferredBatch;
       }
       
-      // For other labs, show all (or use default batch)
+      // For other labs, show all
       return true;
     });
   };

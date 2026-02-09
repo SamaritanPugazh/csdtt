@@ -4,11 +4,12 @@ import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Megaphone, Calendar, Users, BookOpen } from "lucide-react";
+import { ArrowLeft, Megaphone, Calendar, Users, BookOpen, FileText } from "lucide-react";
 import { AnnouncementManager } from "@/components/admin/AnnouncementManager";
 import { TimetableManager } from "@/components/admin/TimetableManager";
 import { TeacherManager } from "@/components/admin/TeacherManager";
 import { SubjectManager } from "@/components/admin/SubjectManager";
+import { CourseUnitsManager } from "@/components/admin/CourseUnitsManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Admin() {
@@ -71,6 +72,10 @@ export default function Admin() {
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Subjects</span>
             </TabsTrigger>
+            <TabsTrigger value="syllabus" className="gap-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Syllabus</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="announcements" className="animate-fade-in">
@@ -101,6 +106,10 @@ export default function Admin() {
                 <SubjectManager />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="syllabus" className="animate-fade-in">
+            <CourseUnitsManager />
           </TabsContent>
         </Tabs>
       </div>

@@ -34,6 +34,8 @@
     --lab: 160 84% 39%;
     --lab-foreground: 0 0% 100%;
     --lab-light: 160 84% 92%;
+    --theory-text: 0 0% 100%;
+    --lab-text: 0 0% 100%;
     --success: 160 84% 39%;
     --warning: 38 92% 50%;
     --info: 199 89% 48%;
@@ -81,6 +83,8 @@
     --lab: 160 84% 45%;
     --lab-foreground: 0 0% 100%;
     --lab-light: 160 40% 18%;
+    --theory-text: 0 0% 100%;
+    --lab-text: 0 0% 100%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

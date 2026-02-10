@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit2, Save, X, Loader2, FileText, BookOpen } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Loader2, FileText, BookOpen, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -56,8 +56,10 @@ export function CourseUnitsManager() {
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
   const { toast } = useToast();
 
   const [formData, setFormData] = useState(initialFormData);
@@ -185,105 +187,209 @@ export function CourseUnitsManager() {
     }
   };
 
+  const handleJsonImport = async () => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      
+      if (!parsed.units || !Array.isArray(parsed.units)) {
+        toast({ title: "Invalid JSON", description: "JSON must contain a 'units' array", variant: "destructive" });
+        return;
+      }
+
+      // Find or match subject
+      let subjectId = selectedSubject;
+      if (parsed.course?.course_code) {
+        const match = subjects.find(s => s.code === parsed.course.course_code);
+        if (match) {
+          subjectId = match.id;
+          setSelectedSubject(match.id);
+        }
+      }
+
+      if (!subjectId) {
+        toast({ title: "No subject selected", variant: "destructive" });
+        return;
+      }
+
+      setIsSaving(true);
+
+      // Delete existing units for this subject first
+      await supabase.from("course_units").delete().eq("subject_id", subjectId);
+
+      // Insert new units
+      const inserts = parsed.units.map((unit: any, index: number) => ({
+        subject_id: subjectId,
+        unit_number: index + 1,
+        unit_name: unit.unit_title || `Unit ${index + 1}`,
+        syllabus: Array.isArray(unit.topics) ? unit.topics.join(", ") : (unit.topics || null),
+      }));
+
+      const { error } = await supabase.from("course_units").insert(inserts);
+
+      if (error) {
+        toast({ title: "Error importing", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Syllabus imported successfully", description: `${inserts.length} units imported` });
+        setIsJsonDialogOpen(false);
+        setJsonInput("");
+        fetchUnits();
+      }
+
+      setIsSaving(false);
+    } catch {
+      toast({ title: "Invalid JSON format", description: "Please check your JSON syntax", variant: "destructive" });
+    }
+  };
+
   const currentSubject = subjects.find((s) => s.id === selectedSubject);
+
+  const jsonTemplate = JSON.stringify({
+    course: { course_name: "", course_code: "" },
+    units: [
+      { unit_number: "UNIT-I", unit_title: "", hours: 0, topics: [] },
+      { unit_number: "UNIT-II", unit_title: "", hours: 0, topics: [] },
+      { unit_number: "UNIT-III", unit_title: "", hours: 0, topics: [] },
+      { unit_number: "UNIT-IV", unit_title: "", hours: 0, topics: [] },
+      { unit_number: "UNIT-V", unit_title: "", hours: 0, topics: [] },
+    ],
+  }, null, 2);
 
   return (
     <Card className="animate-fade-in">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 flex-wrap gap-2">
         <CardTitle className="text-xl flex items-center gap-2">
           <FileText className="w-5 h-5" />
           Course Syllabus
         </CardTitle>
-        <Dialog
-          open={isDialogOpen}
-          onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1" disabled={!selectedSubject}>
-              <Plus className="w-4 h-4" />
-              Add Unit
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="animate-scale-in max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Edit Unit" : "Add Unit"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="unit_number">Unit Number</Label>
-                  <Select
-                    value={formData.unit_number}
-                    onValueChange={(value) => setFormData({ ...formData, unit_number: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          Unit {num}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <p className="text-sm text-muted-foreground pt-2">
-                    {currentSubject?.code} - {currentSubject?.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="unit_name">Unit Name</Label>
-                <Input
-                  id="unit_name"
-                  value={formData.unit_name}
-                  onChange={(e) => setFormData({ ...formData, unit_name: e.target.value })}
-                  placeholder="e.g., Introduction to Neural Networks"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="syllabus">Syllabus Content</Label>
+        <div className="flex gap-2">
+          {/* JSON Import Button */}
+          <Dialog open={isJsonDialogOpen} onOpenChange={setIsJsonDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1" disabled={!selectedSubject}>
+                <Upload className="w-4 h-4" />
+                Import JSON
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Import Syllabus from JSON</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Paste your syllabus JSON below. This will replace all existing units for <strong>{currentSubject?.name || "the selected subject"}</strong>.
+                </p>
                 <Textarea
-                  id="syllabus"
-                  value={formData.syllabus}
-                  onChange={(e) => setFormData({ ...formData, syllabus: e.target.value })}
-                  placeholder="Enter the syllabus topics and content for this unit..."
-                  rows={5}
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
+                  placeholder={jsonTemplate}
+                  rows={12}
+                  className="font-mono text-xs"
                 />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => { setJsonInput(jsonTemplate); }}>
+                    Load Template
+                  </Button>
+                  <Button onClick={handleJsonImport} disabled={isSaving || !jsonInput.trim()}>
+                    {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                    Import
+                  </Button>
+                </div>
               </div>
+            </DialogContent>
+          </Dialog>
 
-              <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    resetForm();
-                  }}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  {editingId ? "Update" : "Add"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+          {/* Add Unit Button */}
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1" disabled={!selectedSubject}>
+                <Plus className="w-4 h-4" />
+                Add Unit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="animate-scale-in max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Edit Unit" : "Add Unit"}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="unit_number">Unit Number</Label>
+                    <Select
+                      value={formData.unit_number}
+                      onValueChange={(value) => setFormData({ ...formData, unit_number: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            Unit {num}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <p className="text-sm text-muted-foreground pt-2">
+                      {currentSubject?.code} - {currentSubject?.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="unit_name">Unit Name</Label>
+                  <Input
+                    id="unit_name"
+                    value={formData.unit_name}
+                    onChange={(e) => setFormData({ ...formData, unit_name: e.target.value })}
+                    placeholder="e.g., Introduction to Neural Networks"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="syllabus">Syllabus Content</Label>
+                  <Textarea
+                    id="syllabus"
+                    value={formData.syllabus}
+                    onChange={(e) => setFormData({ ...formData, syllabus: e.target.value })}
+                    placeholder="Enter the syllabus topics and content for this unit..."
+                    rows={5}
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      resetForm();
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {editingId ? "Update" : "Add"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Subject Selector */}
@@ -315,7 +421,7 @@ export function CourseUnitsManager() {
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>No units added yet for this subject.</p>
-            <p className="text-sm">Click "Add Unit" to create syllabus content.</p>
+            <p className="text-sm">Click "Add Unit" or "Import JSON" to create syllabus content.</p>
           </div>
         ) : (
           <Accordion type="single" collapsible className="w-full">

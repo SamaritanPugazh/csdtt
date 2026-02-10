@@ -286,7 +286,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      batch_type: "B1" | "B2" | "ALL"
+      batch_type: "B1" | "B2" | "ALL" | "B3"
       class_type: "Theory" | "Lab"
       day_type: "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday"
     }
@@ -417,7 +417,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      batch_type: ["B1", "B2", "ALL"],
+      batch_type: ["B1", "B2", "ALL", "B3"],
       class_type: ["Theory", "Lab"],
       day_type: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     },

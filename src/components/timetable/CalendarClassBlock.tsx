@@ -53,7 +53,6 @@ export function CalendarClassBlock({ entry, compact = false }: CalendarClassBloc
       >
         <div className="flex flex-col h-full gap-0.5">
           {compact ? (
-            // Compact view for short time slots
             <div className="flex items-center gap-1.5 min-w-0">
               {isTheory ? (
                 <BookOpen className="w-3.5 h-3.5 flex-shrink-0 opacity-90" />
@@ -68,7 +67,6 @@ export function CalendarClassBlock({ entry, compact = false }: CalendarClassBloc
               )}
             </div>
           ) : (
-            // Full view
             <>
               <div className="flex items-center gap-1.5">
                 {isTheory ? (
@@ -83,12 +81,12 @@ export function CalendarClassBlock({ entry, compact = false }: CalendarClassBloc
                   </span>
                 )}
               </div>
-              <p className="text-xs font-medium leading-tight line-clamp-2 flex-1 opacity-95">
+              <p className="text-xs font-medium leading-tight line-clamp-1 flex-1 opacity-95">
                 {entry.subject_name}
               </p>
-              <div className="flex items-center gap-1.5 mt-auto opacity-90">
-                <MapPin className="w-3 h-3" />
-                <span className="text-[11px] font-medium">{entry.room_number}</span>
+              <div className="flex items-center gap-1 mt-auto opacity-90">
+                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                <span className="text-[10px] font-medium truncate">{entry.room_number}</span>
               </div>
             </>
           )}

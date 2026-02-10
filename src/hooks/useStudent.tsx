@@ -4,7 +4,7 @@ import { isValidRollNumber } from "@/lib/validations";
 
 interface SubjectBatchPreference {
   course_code: string;
-  batch: "B1" | "B2";
+  batch: "B1" | "B2" | "B3";
 }
 
 interface StudentData {
@@ -17,9 +17,9 @@ interface StudentContextType {
   isLoading: boolean;
   isNewStudent: boolean | null;
   setRollNumber: (rollNumber: string) => Promise<boolean>;
-  getSubjectBatch: (courseCode: string) => "B1" | "B2";
-  saveBatchPreferences: (batches: Record<string, "B1" | "B2">) => Promise<void>;
-  updateSubjectBatch: (courseCode: string, batch: "B1" | "B2") => Promise<void>;
+  getSubjectBatch: (courseCode: string) => "B1" | "B2" | "B3";
+  saveBatchPreferences: (batches: Record<string, "B1" | "B2" | "B3">) => Promise<void>;
+  updateSubjectBatch: (courseCode: string, batch: "B1" | "B2" | "B3") => Promise<void>;
   clearStudent: () => void;
 }
 
@@ -86,23 +86,20 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     setIsNewStudent(!hasPreferences);
 
     if (hasPreferences) {
-      // Returning student - set data and save to localStorage
       const newStudent = { rollNumber: trimmed };
       setStudent(newStudent);
       setSubjectBatches(data as SubjectBatchPreference[]);
       localStorage.setItem(STUDENT_STORAGE_KEY, JSON.stringify(newStudent));
     } else {
-      // New student - just set roll number temporarily, don't save yet
       setStudent({ rollNumber: trimmed });
     }
 
     return true;
   };
 
-  const saveBatchPreferences = async (batches: Record<string, "B1" | "B2">) => {
+  const saveBatchPreferences = async (batches: Record<string, "B1" | "B2" | "B3">) => {
     if (!student?.rollNumber) return;
 
-    // Insert all preferences
     const inserts = Object.entries(batches).map(([course_code, batch]) => ({
       roll_number: student.rollNumber,
       course_code,
@@ -122,12 +119,12 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getSubjectBatch = (courseCode: string): "B1" | "B2" => {
+  const getSubjectBatch = (courseCode: string): "B1" | "B2" | "B3" => {
     const pref = subjectBatches.find((p) => p.course_code === courseCode);
     return pref?.batch || "B1";
   };
 
-  const updateSubjectBatch = async (courseCode: string, batch: "B1" | "B2") => {
+  const updateSubjectBatch = async (courseCode: string, batch: "B1" | "B2" | "B3") => {
     if (!student?.rollNumber) {
       return;
     }

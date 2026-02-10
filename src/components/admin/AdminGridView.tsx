@@ -133,6 +133,7 @@ export function AdminGridView({ entries, onEdit, onDelete }: AdminGridViewProps)
               <div className="absolute inset-0 p-1">
                 {dayEntries.map((entry, entryIndex) => {
                   const { top, height } = getBlockStyle(entry.time_slot);
+                  const isTheory = entry.class_type === "Theory";
                   return (
                     <div
                       key={entry.id}
@@ -143,8 +144,22 @@ export function AdminGridView({ entries, onEdit, onDelete }: AdminGridViewProps)
                         animationDelay: `${(dayIndex * 50) + (entryIndex * 30)}ms`
                       }}
                     >
-                      <div className="relative h-full">
-                        <CalendarClassBlock entry={entry} compact={height < 60} />
+                      <div className={cn(
+                        "relative h-full rounded-lg p-1.5 text-white shadow-md overflow-hidden",
+                        isTheory ? "bg-theory" : "bg-lab"
+                      )}>
+                        <div className="flex flex-col h-full gap-0.5">
+                          <span className="text-[10px] font-bold truncate">{entry.course_code}</span>
+                          {height >= 55 && (
+                            <span className="text-[9px] opacity-90 truncate">{entry.subject_name}</span>
+                          )}
+                          {height >= 45 && (
+                            <span className="text-[9px] opacity-80 truncate mt-auto">{entry.room_number}</span>
+                          )}
+                          {entry.batch !== "ALL" && (
+                            <span className="text-[8px] bg-black/15 px-1 rounded w-fit">{entry.batch}</span>
+                          )}
+                        </div>
                         {/* Hover Actions */}
                         <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 p-0.5 bg-background/80 rounded-bl-lg">
                           <Button

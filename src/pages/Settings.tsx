@@ -40,7 +40,7 @@ export default function Settings() {
     fetchSplitSubjects();
   }, []);
 
-  const handleBatchChange = async (courseCode: string, batch: "B1" | "B2") => {
+  const handleBatchChange = async (courseCode: string, batch: "B1" | "B2" | "B3") => {
     await updateSubjectBatch(courseCode, batch);
     const subject = splitSubjects.find((s) => s.code === courseCode);
     toast({
@@ -60,10 +60,9 @@ export default function Settings() {
   }
 
   // Generate batch options based on num_batches
-  const getBatchOptions = (numBatches: number) => {
-    // For now, we support B1 and B2 as per the database enum
-    // The num_batches field indicates how many batches exist
-    return ["B1", "B2"].slice(0, Math.min(numBatches, 2));
+  const getBatchOptions = (numBatches: number): string[] => {
+    const allBatches = ["B1", "B2", "B3"];
+    return allBatches.slice(0, Math.min(numBatches, 3));
   };
 
   return (
@@ -119,7 +118,7 @@ export default function Settings() {
                       </div>
                       <RadioGroup
                         value={getSubjectBatch(subject.code)}
-                        onValueChange={(value) => handleBatchChange(subject.code, value as "B1" | "B2")}
+                        onValueChange={(value) => handleBatchChange(subject.code, value as "B1" | "B2" | "B3")}
                         className="flex gap-4"
                       >
                         {getBatchOptions(subject.num_batches).map((batch) => (

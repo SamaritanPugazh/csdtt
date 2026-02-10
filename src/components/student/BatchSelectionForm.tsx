@@ -1,30 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SplitSubject {
+  code: string;
+  name: string;
+  num_batches: number;
+}
 
 interface BatchSelectionFormProps {
   rollNumber: string;
-  onSubmit: (batches: Record<string, "B1" | "B2">) => void;
+  onSubmit: (batches: Record<string, "B1" | "B2" | "B3">) => void;
 }
 
-const SUBJECTS = [
-  { code: "CD23631", name: "Game Design & Development" },
-  { code: "CD23632", name: "3D Rigging & Animation" },
-  { code: "AI23331", name: "Fundamentals of Machine Learning" },
-];
-
 export function BatchSelectionForm({ rollNumber, onSubmit }: BatchSelectionFormProps) {
-  const [batches, setBatches] = useState<Record<string, "B1" | "B2">>({
-    CD23631: "B1",
-    CD23632: "B1",
-    AI23331: "B1",
-  });
+  const [subjects, setSubjects] = useState<SplitSubject[]>([]);
+  const [batches, setBatches] = useState<Record<string, "B1" | "B2" | "B3">>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
-  const handleBatchChange = (courseCode: string, batch: "B1" | "B2") => {
+  useEffect(() => {
+    const fetchSplitSubjects = async () => {
+      const { data } = await supabase
+        .from("subjects")
+        .select("code, name, num_batches")
+        .eq("split_students", true)
+        .order("code", { ascending: true });
+
+      if (data) {
+        const filtered = data.filter((s) => s.num_batches && s.num_batches > 1) as SplitSubject[];
+        setSubjects(filtered);
+        const initial: Record<string, "B1" | "B2" | "B3"> = {};
+        filtered.forEach((s) => { initial[s.code] = "B1"; });
+        setBatches(initial);
+      }
+      setIsFetching(false);
+    };
+    fetchSplitSubjects();
+  }, []);
+
+  const getBatchOptions = (numBatches: number): string[] => {
+    const allBatches = ["B1", "B2", "B3"];
+    return allBatches.slice(0, Math.min(numBatches, 3));
+  };
+
+  const handleBatchChange = (courseCode: string, batch: "B1" | "B2" | "B3") => {
     setBatches((prev) => ({ ...prev, [courseCode]: batch }));
   };
 
@@ -36,6 +60,14 @@ export function BatchSelectionForm({ rollNumber, onSubmit }: BatchSelectionFormP
       setIsLoading(false);
     }, 300);
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -49,32 +81,32 @@ export function BatchSelectionForm({ rollNumber, onSubmit }: BatchSelectionFormP
       </div>
 
       <div className="space-y-4">
-        {SUBJECTS.map((subject) => (
-          <Card key={subject.code} className="p-4">
-            <div className="mb-3">
-              <p className="font-medium text-foreground text-sm">{subject.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{subject.code}</p>
-            </div>
-            <RadioGroup
-              value={batches[subject.code]}
-              onValueChange={(value) => handleBatchChange(subject.code, value as "B1" | "B2")}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="B1" id={`${subject.code}-b1`} />
-                <Label htmlFor={`${subject.code}-b1`} className="font-normal cursor-pointer">
-                  B1
-                </Label>
+        {subjects.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm">No subjects require batch selection.</p>
+        ) : (
+          subjects.map((subject) => (
+            <Card key={subject.code} className="p-4">
+              <div className="mb-3">
+                <p className="font-medium text-foreground text-sm">{subject.name}</p>
+                <p className="text-xs text-muted-foreground font-mono">{subject.code}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="B2" id={`${subject.code}-b2`} />
-                <Label htmlFor={`${subject.code}-b2`} className="font-normal cursor-pointer">
-                  B2
-                </Label>
-              </div>
-            </RadioGroup>
-          </Card>
-        ))}
+              <RadioGroup
+                value={batches[subject.code]}
+                onValueChange={(value) => handleBatchChange(subject.code, value as "B1" | "B2" | "B3")}
+                className="flex gap-6"
+              >
+                {getBatchOptions(subject.num_batches).map((batch) => (
+                  <div key={batch} className="flex items-center space-x-2">
+                    <RadioGroupItem value={batch} id={`${subject.code}-${batch.toLowerCase()}`} />
+                    <Label htmlFor={`${subject.code}-${batch.toLowerCase()}`} className="font-normal cursor-pointer">
+                      {batch}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </Card>
+          ))
+        )}
       </div>
 
       <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
